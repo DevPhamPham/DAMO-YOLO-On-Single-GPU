@@ -77,7 +77,11 @@ class ema_model:
 
     def update(self, iters, student):
 
-        student = student.module.state_dict()
+        if hasattr(student, "module"):
+            student = student.module.state_dict()
+        else:
+            student = student.state_dict()
+
         with torch.no_grad():
             momentum = self.ema_scheduler(iters)
             for name, param in self.model.state_dict().items():
@@ -116,7 +120,7 @@ class Trainer:
 
         # build model
         self.model = build_local_model(self.cfg, self.device)
-        self.model = nn.SyncBatchNorm.convert_sync_batchnorm(self.model)
+        # self.model = nn.SyncBatchNorm.convert_sync_batchnorm(self.model)
         logger.info('model:', self.model)
 
         if tea_cfg is not None:
@@ -196,14 +200,14 @@ class Trainer:
                                         batch_size=cfg.train.batch_size,
                                         start_epoch=self.start_epoch,
                                         total_epochs=cfg.train.total_epochs,
-                                        num_workers=cfg.miscs.num_workers,
+                                        num_workers=4,
                                         is_train=True,
                                         size_div=32)
 
         val_loader = build_dataloader(val_dataset,
                                       cfg.test.augment,
                                       batch_size=cfg.test.batch_size,
-                                      num_workers=cfg.miscs.num_workers,
+                                      num_workers=4,
                                       is_train=False,
                                       size_div=32)
 
@@ -267,7 +271,12 @@ class Trainer:
             get_model_info(self.model, (infer_shape, infer_shape))))
 
         # distributed model init
-        self.model = build_ddp_model(self.model, local_rank)
+        if torch.cuda.device_count() > 1:
+            torch.distributed.init_process_group(backend='nccl')
+            self.model = build_ddp_model(self.model, local_rank)
+        else:
+            self.model = self.model.to(self.device)
+
         logger.info('Model: {}'.format(self.model))
 
         logger.info('Training start...')
