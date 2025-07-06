@@ -7,51 +7,54 @@ import torch.utils.data
 
 from damo.utils import get_world_size
 
-from . import datasets as D
+from damo.dataset import datasets as D
 from .collate_batch import BatchCollator
 from .datasets import MosaicWrapper
-from .samplers import DistributedSampler, IterationBasedBatchSampler
+# ❌ bỏ DistributedSampler đi nếu không dùng distributed
+# from .samplers import DistributedSampler, IterationBasedBatchSampler
+from .samplers import IterationBasedBatchSampler
 from .transforms import build_transforms
+
+# 👇 Thêm vào
+from torch.utils.data import RandomSampler, SequentialSampler
 
 
 def build_dataset(cfg, ann_files, is_train=True, mosaic_mixup=None):
-
     if not isinstance(ann_files, (list, tuple)):
         raise RuntimeError(
             'datasets should be a list of strings, got {}'.format(ann_files))
     datasets = []
     for dataset_name in ann_files:
-        # read data from config first
         data = cfg.get_data(dataset_name)
         factory = getattr(D, data['factory'])
         args = data['args']
         args['transforms'] = None
         args['class_names'] = cfg.dataset.class_names
-        # make dataset from factory
         dataset = factory(**args)
 
-        # mosaic wrapped
         if is_train and mosaic_mixup is not None:
-            dataset = MosaicWrapper(dataset=dataset,
-                                    img_size=mosaic_mixup.mosaic_size,
-                                    mosaic_prob=mosaic_mixup.mosaic_prob,
-                                    mixup_prob=mosaic_mixup.mixup_prob,
-                                    transforms=None,
-                                    degrees=mosaic_mixup.degrees,
-                                    translate=mosaic_mixup.translate,
-                                    shear=mosaic_mixup.shear,
-                                    mosaic_scale=mosaic_mixup.mosaic_scale,
-                                    mixup_scale=mosaic_mixup.mixup_scale,
-                                    keep_ratio=mosaic_mixup.keep_ratio)
+            dataset = MosaicWrapper(
+                dataset=dataset,
+                img_size=mosaic_mixup.mosaic_size,
+                mosaic_prob=mosaic_mixup.mosaic_prob,
+                mixup_prob=mosaic_mixup.mixup_prob,
+                transforms=None,
+                degrees=mosaic_mixup.degrees,
+                translate=mosaic_mixup.translate,
+                shear=mosaic_mixup.shear,
+                mosaic_scale=mosaic_mixup.mosaic_scale,
+                mixup_scale=mosaic_mixup.mixup_scale,
+                keep_ratio=mosaic_mixup.keep_ratio
+            )
 
         datasets.append(dataset)
 
     return datasets
 
 
+# ✅ Sửa tại đây:
 def make_data_sampler(dataset, shuffle):
-
-    return DistributedSampler(dataset, shuffle=shuffle)
+    return RandomSampler(dataset) if shuffle else SequentialSampler(dataset)
 
 
 def _quantize(x, bins):
@@ -92,7 +95,7 @@ def build_dataloader(datasets,
                      total_epochs=None,
                      no_aug_epochs=0,
                      is_train=True,
-                     num_workers=8,
+                     num_workers=0,
                      size_div=32):
 
     num_gpus = get_world_size()
