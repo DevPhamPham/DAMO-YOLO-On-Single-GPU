@@ -10,10 +10,10 @@ class Config(MyConfig):
         self.miscs.exp_name = os.path.splitext(os.path.basename(__file__))[0]
         self.miscs.eval_interval_epochs = 5
         self.miscs.ckpt_interval_epochs = 5
-        self.miscs.total_epochs = 150  # Tổng số epoch giảm xuống 150
 
         # 2) Lịch train
         self.train.batch_size = 10
+        self.train.total_epochs = 150
         self.train.base_lr_per_img = 0.01 / 64
         self.train.min_lr_ratio = 0.05
         self.train.weight_decay = 5e-4
