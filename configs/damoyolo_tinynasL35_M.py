@@ -10,9 +10,10 @@ class Config(MyConfig):
         self.miscs.exp_name = os.path.splitext(os.path.basename(__file__))[0]
         self.miscs.eval_interval_epochs = 5
         self.miscs.ckpt_interval_epochs = 5
+        self.miscs.total_epochs = 150  # Tổng số epoch giảm xuống 150
 
         # 2) Lịch train
-        self.train.batch_size = 16
+        self.train.batch_size = 32
         self.train.base_lr_per_img = 0.01 / 64
         self.train.min_lr_ratio = 0.05
         self.train.weight_decay = 5e-4
@@ -28,8 +29,6 @@ class Config(MyConfig):
             'nesterov': True
         }
 
-
-
         # 3) Augment
         self.train.augment.transform.image_max_range = (640, 640)
         self.train.augment.mosaic_mixup.mixup_prob = 0.15
@@ -39,14 +38,11 @@ class Config(MyConfig):
         self.train.augment.mosaic_mixup.mosaic_scale = (0.1, 2.0)
 
         # 4) Dữ liệu COCO
-        self.dataset.data_dir    = 'datasets/coco'
+        # self.dataset.data_dir  = 'datasets/coco'
         self.dataset.train_ann = ('train2019_coco',)
         self.dataset.val_ann   = ('val2019_coco',)
 
-
-
-
-        # 5) Backbone / Neck / Head: phải khởi tạo trước khi gán num_classes
+        # 5) Backbone / Neck / Head: giữ nguyên kiến trúc gốc
         structure = self.read_structure(
             './damo/base_models/backbones/nas_backbones/tinynas_L35_kxkx.txt')
         self.model.backbone = {
@@ -68,17 +64,17 @@ class Config(MyConfig):
             'spp': False,
             'block_name': 'BasicBlock_3x3_Reverse',
         }
-        # Khởi tạo head cơ bản
         self.model.head = {
             'name': 'ZeroHead',
             'in_channels': [128, 256, 512],
             'stacked_convs': 0,
-            'reg_max': 10,
+            'reg_max': 16,
             'act': 'silu',
             'nms_conf_thre': 0.5,
             'nms_iou_thre': 0.45,
-            # gán num_classes ở đây
+            # num_classes giữ nguyên 3
             'num_classes': 3,
+            'legacy': False,
         }
 
         # 6) Danh sách tên lớp
