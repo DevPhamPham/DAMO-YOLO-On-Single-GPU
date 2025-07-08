@@ -39,7 +39,7 @@ class Config(MyConfig):
         self.train.augment.mosaic_mixup.mosaic_scale = (0.1, 2.0)
 
         # 4) Dữ liệu COCO
-        self.dataset.data_dir    = '/workspace/data'
+        self.dataset.data_dir    = 'datasets/coco'
         self.dataset.train_ann = ('train2019_coco',)
         self.dataset.val_ann   = ('val2019_coco',)
 
