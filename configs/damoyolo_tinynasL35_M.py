@@ -13,18 +13,18 @@ class Config(MyConfig):
 
         # 2) Lịch train
         self.train.batch_size = 16
-        self.train.total_epochs = 150
+        self.train.total_epochs = 75
         self.train.base_lr_per_img = 0.01 / 64
         self.train.min_lr_ratio = 0.05
         self.train.weight_decay = 5e-4
         self.train.momentum = 0.9
-        self.train.no_aug_epochs = 16
+        self.train.no_aug_epochs = 10
         self.train.warmup_epochs = 5
         # 2.1) Optimizer config
         self.train.optimizer = {
             'name': 'SGD',
             'lr': 0.001,
-            'momentum': 0.9,
+            'momentum': 0.937,
             'weight_decay': 0.0005,
             'nesterov': True
         }
